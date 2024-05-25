@@ -3,9 +3,12 @@
 #[ink::contract]
 mod erc721 {
     use ink::storage::Mapping;
+    use ink::prelude::string::String;
 
     /// A token ID.
     pub type TokenId = u32;
+    /// The URI, where the asset is stored.
+    pub type TokenURI = String;
 
     #[ink(storage)]
     #[derive(Default)]
@@ -18,6 +21,8 @@ mod erc721 {
         owned_tokens_count: Mapping<AccountId, u32>,
         /// Mapping from owner to operator approvals.
         operator_approvals: Mapping<(AccountId, AccountId), ()>,
+        /// Mapping to store token URIs.
+        token_uris: Mapping<TokenId, TokenURI>,
     }
 
     #[derive(Debug, PartialEq, Eq, Copy, Clone)]
@@ -153,6 +158,12 @@ mod erc721 {
             Ok(())
         }
 
+        /// Fetches the URI for a given token ID.
+        #[ink(message)]
+        pub fn token_uri(&self, id: TokenId) -> Option<TokenURI> {
+            self.token_uris.get(id)
+        }
+
         /// Deletes an existing token. Only the owner can burn the token.
         #[ink(message)]
         pub fn burn(&mut self, id: TokenId) -> Result<(), Error> {
@@ -174,6 +185,7 @@ mod erc721 {
                 .ok_or(Error::CannotFetchValue)?;
             owned_tokens_count.insert(caller, &count);
             token_owner.remove(id);
+            self.token_uris.remove(id);
 
             self.env().emit_event(Transfer {
                 from: Some(caller),
