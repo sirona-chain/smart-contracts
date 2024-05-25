@@ -70,6 +70,16 @@ mod erc721 {
         approved: bool,
     }
 
+    /// Event emitted when a new NFT is minted.
+    #[ink(event)]
+    pub struct Mint {
+        #[ink(topic)]
+        to: AccountId,
+        #[ink(topic)]
+        id: TokenId,
+        uri: TokenURI,
+    }
+
     impl Erc721 {
         /// Creates a new ERC-721 token contract.
         #[ink(constructor)]
@@ -147,9 +157,15 @@ mod erc721 {
 
         /// Creates a new token.
         #[ink(message)]
-        pub fn mint(&mut self, id: TokenId) -> Result<(), Error> {
+        pub fn mint(&mut self, id: TokenId, url: TokenURI) -> Result<(), Error> {
             let caller = self.env().caller();
             self.add_token_to(&caller, id)?;
+            self.token_uris.insert(id, &url);
+            self.env().emit_event(Mint {
+                to: caller,
+                id,
+                uri: url.clone(),
+            });
             self.env().emit_event(Transfer {
                 from: Some(AccountId::from([0x0; 32])),
                 to: Some(caller),
