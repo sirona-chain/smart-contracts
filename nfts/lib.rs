@@ -349,7 +349,7 @@ mod erc721 {
             self.token_approvals.remove(id);
         }
 
-        // Returns the total number of tokens from an account.
+        /// Returns the total number of tokens from an account.
         fn balance_of_or_zero(&self, of: &AccountId) -> u32 {
             self.owned_tokens_count.get(of).unwrap_or(0)
         }
@@ -386,14 +386,17 @@ mod erc721 {
                 ink::env::test::default_accounts::<ink::env::DefaultEnvironment>();
             // Create a new contract instance.
             let mut erc721 = Erc721::new();
-            // Token 1 does not exists.
+            // Token 1 does not exist.
             assert_eq!(erc721.owner_of(1), None);
-            // Alice does not owns tokens.
+            // Alice does not own tokens.
             assert_eq!(erc721.balance_of(accounts.alice), 0);
-            // Create token Id 1.
-            assert_eq!(erc721.mint(1), Ok(()));
+            // Create token Id 1 with a URI.
+            let token_uri = String::from("https://example.com/nft/1");
+            assert_eq!(erc721.mint(1, token_uri.clone()), Ok(()));
             // Alice owns 1 token.
             assert_eq!(erc721.balance_of(accounts.alice), 1);
+            // Check token URI.
+            assert_eq!(erc721.token_uri(1), Some(token_uri));
         }
 
         #[ink::test]
@@ -402,17 +405,18 @@ mod erc721 {
                 ink::env::test::default_accounts::<ink::env::DefaultEnvironment>();
             // Create a new contract instance.
             let mut erc721 = Erc721::new();
-            // Create token Id 1.
-            assert_eq!(erc721.mint(1), Ok(()));
+            // Create token Id 1 with a URI.
+            let token_uri = String::from("https://example.com/nft/1");
+            assert_eq!(erc721.mint(1, token_uri.clone()), Ok(()));
             // The first Transfer event takes place
             assert_eq!(1, ink::env::test::recorded_events().count());
             // Alice owns 1 token.
             assert_eq!(erc721.balance_of(accounts.alice), 1);
             // Alice owns token Id 1.
             assert_eq!(erc721.owner_of(1), Some(accounts.alice));
-            // Cannot create  token Id if it exists.
+            // Cannot create token Id if it exists.
             // Bob cannot own token Id 1.
-            assert_eq!(erc721.mint(1), Err(Error::TokenExists));
+            assert_eq!(erc721.mint(1, token_uri), Err(Error::TokenExists));
         }
 
         #[ink::test]
@@ -422,10 +426,11 @@ mod erc721 {
             // Create a new contract instance.
             let mut erc721 = Erc721::new();
             // Create token Id 1 for Alice
-            assert_eq!(erc721.mint(1), Ok(()));
+            let token_uri = String::from("https://example.com/nft/1");
+            assert_eq!(erc721.mint(1, token_uri), Ok(()));
             // Alice owns token 1
             assert_eq!(erc721.balance_of(accounts.alice), 1);
-            // Bob does not owns any token
+            // Bob does not own any token
             assert_eq!(erc721.balance_of(accounts.bob), 0);
             // The first Transfer event takes place
             assert_eq!(1, ink::env::test::recorded_events().count());
@@ -443,12 +448,13 @@ mod erc721 {
                 ink::env::test::default_accounts::<ink::env::DefaultEnvironment>();
             // Create a new contract instance.
             let mut erc721 = Erc721::new();
-            // Transfer token fails if it does not exists.
+            // Transfer token fails if it does not exist.
             assert_eq!(erc721.transfer(accounts.bob, 2), Err(Error::TokenNotFound));
-            // Token Id 2 does not exists.
+            // Token Id 2 does not exist.
             assert_eq!(erc721.owner_of(2), None);
             // Create token Id 2.
-            assert_eq!(erc721.mint(2), Ok(()));
+            let token_uri = String::from("https://example.com/nft/2");
+            assert_eq!(erc721.mint(2, token_uri), Ok(()));
             // Alice owns 1 token.
             assert_eq!(erc721.balance_of(accounts.alice), 1);
             // Token Id 2 is owned by Alice.
@@ -466,7 +472,8 @@ mod erc721 {
             // Create a new contract instance.
             let mut erc721 = Erc721::new();
             // Create token Id 1.
-            assert_eq!(erc721.mint(1), Ok(()));
+            let token_uri = String::from("https://example.com/nft/1");
+            assert_eq!(erc721.mint(1, token_uri), Ok(()));
             // Token Id 1 is owned by Alice.
             assert_eq!(erc721.owner_of(1), Some(accounts.alice));
             // Approve token Id 1 transfer for Bob on behalf of Alice.
@@ -478,11 +485,11 @@ mod erc721 {
                 erc721.transfer_from(accounts.alice, accounts.eve, 1),
                 Ok(())
             );
-            // TokenId 3 is owned by Eve.
+            // Token Id 1 is owned by Eve.
             assert_eq!(erc721.owner_of(1), Some(accounts.eve));
-            // Alice does not owns tokens.
+            // Alice does not own tokens.
             assert_eq!(erc721.balance_of(accounts.alice), 0);
-            // Bob does not owns tokens.
+            // Bob does not own tokens.
             assert_eq!(erc721.balance_of(accounts.bob), 0);
             // Eve owns 1 token.
             assert_eq!(erc721.balance_of(accounts.eve), 1);
@@ -495,9 +502,11 @@ mod erc721 {
             // Create a new contract instance.
             let mut erc721 = Erc721::new();
             // Create token Id 1.
-            assert_eq!(erc721.mint(1), Ok(()));
+            let token_uri1 = String::from("https://example.com/nft/1");
+            assert_eq!(erc721.mint(1, token_uri1), Ok(()));
             // Create token Id 2.
-            assert_eq!(erc721.mint(2), Ok(()));
+            let token_uri2 = String::from("https://example.com/nft/2");
+            assert_eq!(erc721.mint(2, token_uri2), Ok(()));
             // Alice owns 2 tokens.
             assert_eq!(erc721.balance_of(accounts.alice), 2);
             // Approve token Id 1 transfer for Bob on behalf of Alice.
@@ -511,7 +520,7 @@ mod erc721 {
                 erc721.transfer_from(accounts.alice, accounts.eve, 1),
                 Ok(())
             );
-            // TokenId 1 is owned by Eve.
+            // Token Id 1 is owned by Eve.
             assert_eq!(erc721.owner_of(1), Some(accounts.eve));
             // Alice owns 1 token.
             assert_eq!(erc721.balance_of(accounts.alice), 1);
@@ -548,12 +557,13 @@ mod erc721 {
             // Create a new contract instance.
             let mut erc721 = Erc721::new();
             // Create token Id 1.
-            assert_eq!(erc721.mint(1), Ok(()));
+            let token_uri = String::from("https://example.com/nft/1");
+            assert_eq!(erc721.mint(1, token_uri), Ok(()));
             // Alice owns 1 token.
             assert_eq!(erc721.balance_of(accounts.alice), 1);
-            // Bob does not owns tokens.
+            // Bob does not own tokens.
             assert_eq!(erc721.balance_of(accounts.bob), 0);
-            // Eve does not owns tokens.
+            // Eve does not own tokens.
             assert_eq!(erc721.balance_of(accounts.eve), 0);
             // Set Eve as caller
             set_caller(accounts.eve);
@@ -564,9 +574,9 @@ mod erc721 {
             );
             // Alice owns 1 token.
             assert_eq!(erc721.balance_of(accounts.alice), 1);
-            // Bob does not owns tokens.
+            // Bob does not own tokens.
             assert_eq!(erc721.balance_of(accounts.bob), 0);
-            // Eve does not owns tokens.
+            // Eve does not own tokens.
             assert_eq!(erc721.balance_of(accounts.eve), 0);
         }
 
@@ -577,16 +587,17 @@ mod erc721 {
             // Create a new contract instance.
             let mut erc721 = Erc721::new();
             // Create token Id 1 for Alice
-            assert_eq!(erc721.mint(1), Ok(()));
+            let token_uri = String::from("https://example.com/nft/1");
+            assert_eq!(erc721.mint(1, token_uri), Ok(()));
             // Alice owns 1 token.
             assert_eq!(erc721.balance_of(accounts.alice), 1);
             // Alice owns token Id 1.
             assert_eq!(erc721.owner_of(1), Some(accounts.alice));
             // Destroy token Id 1.
             assert_eq!(erc721.burn(1), Ok(()));
-            // Alice does not owns tokens.
+            // Alice does not own tokens.
             assert_eq!(erc721.balance_of(accounts.alice), 0);
-            // Token Id 1 does not exists
+            // Token Id 1 does not exist
             assert_eq!(erc721.owner_of(1), None);
         }
 
@@ -594,7 +605,7 @@ mod erc721 {
         fn burn_fails_token_not_found() {
             // Create a new contract instance.
             let mut erc721 = Erc721::new();
-            // Try burning a non existent token
+            // Try burning a non-existent token
             assert_eq!(erc721.burn(1), Err(Error::TokenNotFound));
         }
 
@@ -605,7 +616,8 @@ mod erc721 {
             // Create a new contract instance.
             let mut erc721 = Erc721::new();
             // Create token Id 1 for Alice
-            assert_eq!(erc721.mint(1), Ok(()));
+            let token_uri = String::from("https://example.com/nft/1");
+            assert_eq!(erc721.mint(1, token_uri), Ok(()));
             // Try burning this token with a different account
             set_caller(accounts.eve);
             assert_eq!(erc721.burn(1), Err(Error::NotOwner));
@@ -618,16 +630,18 @@ mod erc721 {
             // Create a new contract instance.
             let mut erc721 = Erc721::new();
             // Create token Id 1 for Alice
-            assert_eq!(erc721.mint(1), Ok(()));
-            // Bob can transfer alice's tokens
+            let token_uri1 = String::from("https://example.com/nft/1");
+            assert_eq!(erc721.mint(1, token_uri1), Ok(()));
+            // Bob can transfer Alice's tokens
             assert_eq!(erc721.set_approval_for_all(accounts.bob, true), Ok(()));
             // Set caller to Frank
             set_caller(accounts.frank);
             // Create token Id 2 for Frank
-            assert_eq!(erc721.mint(2), Ok(()));
+            let token_uri2 = String::from("https://example.com/nft/2");
+            assert_eq!(erc721.mint(2, token_uri2), Ok(()));
             // Set caller to Bob
             set_caller(accounts.bob);
-            // Bob makes invalid call to transfer_from (Alice is token owner, not Frank)
+            // Bob makes an invalid call to transfer_from (Alice is the token owner, not Frank)
             assert_eq!(
                 erc721.transfer_from(accounts.frank, accounts.bob, 1),
                 Err(Error::NotOwner)
@@ -641,12 +655,13 @@ mod erc721 {
             // Create a new contract instance.
             let mut erc721 = Erc721::new();
             // Create token Id 1 for Alice
-            assert_eq!(erc721.mint(1), Ok(()));
-            // Bob can transfer alice's tokens
+            let token_uri = String::from("https://example.com/nft/1");
+            assert_eq!(erc721.mint(1, token_uri), Ok(()));
+            // Bob can transfer Alice's tokens
             assert_eq!(erc721.set_approval_for_all(accounts.bob, true), Ok(()));
-            // Set caller to bob
+            // Set caller to Bob
             set_caller(accounts.bob);
-            // Bob makes invalid call to transfer (he is not token owner, Alice is)
+            // Bob makes an invalid call to transfer (he is not the token owner, Alice is)
             assert_eq!(erc721.transfer(accounts.bob, 1), Err(Error::NotOwner));
         }
 
